@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type='text/xsl' href='rfc2629.xslt' ?>
+
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+
+<rfc category='std' ipr='trust200902'
+     docName='draft-ivov-mmusic-ice-updates-00'>
+
+<?rfc toc='yes' ?>
+<?rfc symrefs='yes' ?>
+<?rfc sortrefs='yes'?>
+<?rfc iprnotified='no' ?>
+<?rfc strict='yes' ?>
+<?rfc compact='yes' ?>
+  <front>
+
+    <title abbrev='ICE Updates'>
+      Non-disruptive Candidate Updates for the Interactive Connectivity
+      Establishment (ICE) Protocol
+    </title>
+    <author initials='E.' surname='Ivov'
+            fullname='Emil Ivov'>
+      <organization abbrev='Jitsi'>Jitsi</organization>
+      <address>
+        <postal>
+          <street></street>
+          <city>Strasbourg</city>
+          <code>67000</code>
+          <country>France</country>
+        </postal>
+        <phone>+33 6 72 81 15 55</phone>
+        <email>emcho@jitsi.org</email>
+      </address>
+    </author>
+    <date />
+    <abstract>
+      <t>
+        This document describes a mechanism for updating the transport
+        parameters of real-time communication sessions (e.g. as a result of
+        mid-session device mobility) without disrupting ongoing communication
+        and without requiring Offer/Answer negotiation.
+      </t>
+    </abstract>
+  </front>
+  <middle>
+    <section title='Introduction'>
+      <t>
+        The Interactive Connectivity Establishment (ICE) protocol
+        <xref target="RFC5245"/> defines a way of discovering and validating a
+        path between two peers. Switching an ongoing media session to an
+        alternative path is therefore only possible after an ICE restart that
+        would again produce a single "nominated" candidate pair for use by the
+        applications.
+      </t>
+      <t>
+        As a result, implementing path optimizations is currently a cumbersome
+        process that is often implemented in a disruptive way or not supported
+        at all.
+      </t>
+      <t>
+        This document discusses ways of simplifying the process. Special
+        attention is being paid to preserving existing features in ICE and
+        trickle ICE <xref target="I-D.ivov-mmusic-trickle-ice"/> that allow
+        implementations today to promptly release unused candidates or
+        detect failures in a deterministic way.
+      </t>
+    </section>
+    <section title='Multipath ICE' anchor="section-mpice">
+      <t>
+        An ongoing discussion in MMUSIC <xref target="ICE-OPTS"/> is already
+        investigating the possibility of having ICE processing yield multiple
+        usable candidate pairs. A rough proposal for achieving this is being
+        currently fleshed out <xref target="MPICE"/> and an IETF submission
+        would likely follow shortly.
+      </t>
+      <t>
+        Having ICE produce multiple usable candidate pairs opens up
+        possibilities for various application specific adjustments and
+        optimizations. Using multiple routes concurrently
+        <xref target="I-D.singh-avtcore-mprtp"/>  is one such example. Being
+        able to swiftly switch between existing routes based on RTT or
+        local indicators (e.g., perceived Wi-Fi signal strength) is another.
+        Rapid route switching can also be used to support network mobility as
+        described in <xref target="I-D.draft-wing-mmusic-ice-mobility"/>.
+        (PENDING: use with MICE requires some further thought in order to
+        optimize the case of a mobile peer talking to a public media server).
+      </t>
+      <t>
+        Being able to update the list of available routes however, is a separate
+        problem that is best handled by reusing of ICE restarts, trickle ICE and
+        slightly improved signalling <xref target="trickle-restart"/>.
+      </t>
+    </section>
+    <section title='Triggering a Trickle ICE Restart' anchor="trickle-restart">
+      <t>
+        The vanilla ICE specifications <xref target="RFC5245"/> defines ICE
+        restarts as a non disruptive process where media can continue flowing
+        between existing candidates while ICE is being re-run to discover new
+        paths. ICE restarts can be triggered by either party and are signalled
+        with the generation of new ice-ufrag and ice-pwd attributes by the party
+        who is triggering the restart.
+      </t>
+      <t>
+        An ICE restart may result in a set of valid candidate pairs that
+        contains none, some, or all of the candidate pairs being used prior to
+        the restart. The new candidate pair set may obviously also contain zero
+        or more new valid pairs that were not available prior to the restart.
+      </t>
+      <t>
+        It is entirely possible for an ICE restart to complete without
+        triggering even a single change to current media flows. This is
+        important because it gives implementors the possibility to use ICE
+        restart as an incremental process that does not in any way disrupt
+        existing paths.
+      </t>
+      <section title="Trickle-triggering an ICE restart">
+        <t>
+          Vanilla ICE defines trigger for an ICE restart as a change in the
+          ice-ufrag and ice-pwd attributes. While this constitutes a trivial
+          change, standard Offer/Answer semantics imply the generation of a
+          complete offer and answer even if the above to attributes are so far
+          the only change in the session.
+        </t>
+        <t>
+          To avoid such a heavy process, this document suggests using trickle
+          ICE semantics for the delivery of the two attributes. This way,
+          whenever an ICE implementation stack issues the new values for the
+          ice-ufrag and ice-pwd attributes, the using application will deliver
+          them the same way it usually delivers trickled candidates.
+        </t>
+        <t>
+          For example, for the Session Initiation Protocol (SIP)
+          <xref target="RFC3261"/> this would imply sending an SIP INFO request
+          <xref target="I-D.ivov-mmusic-trickle-ice-sip"/> that could look like
+          the following:
+        </t>
+        <t>
+          <figure>
+            <artwork>
+<![CDATA[
+      INFO sip:alice@example.com SIP/2.0
+      ...
+      Info-Package: trickle-ice
+      Content-type: application/sdp
+      Content-Disposition: Info-Package
+      Content-length: ...
+
+      a=ice-pwd:asd88fgpdd777uzjYhagZg
+      a=ice-ufrag:8hhY
+
+]]>
+            </artwork>
+          </figure>
+        </t>
+        <t>
+          In the case of XMPP Jingle <xref target="XEP-0176"/> the ICE restart
+          trigger could look like this:
+        </t>
+        <t>
+          <figure>
+            <artwork>
+<![CDATA[
+      <iq from='romeo@montague.lit/orchard'
+          id='pd81b49s'
+          to='juliet@capulet.lit/balcony'
+          type='set'>
+       <jingle xmlns='urn:xmpp:jingle:1'
+               action='transport-info'
+               initiator='romeo@montague.lit/orchard'
+               sid='a73sjjvkla37jfea'>
+         <content creator='initiator' name='this-is-the-audio-content'>
+           <transport xmlns='urn:xmpp:jingle:transports:ice-udp:1'
+                      pwd='asd88fgpdd777uzjYhagZg'
+                      ufrag='8hhy'>
+           </transport>
+         </content>
+       </jingle>
+      </iq>
+]]>
+            </artwork>
+          </figure>
+        </t>
+      </section>
+      <section title="Operation">
+        <t>
+          Once a restart is triggered, ICE processing will mostly continue
+          similarly to the way it does with initial session establishment.
+          Pairs and checklists will be recreated as per regular trickle ICE
+          procedures.
+        </t>
+        <section title="Re-checking currently valid pairs">
+          <t>
+            Depending on the event that triggered the ICE restart, some of the
+            newly formed pairs will likely be identical to those currently
+            in-use by the agents. This would be the case, for example, in
+            situations where a new interface has become available. While it is
+            very likely for these pairs to continue working the same way as
+            before the restart, it is RECOMMENDED that they be subject to a new
+            set of connectivity checks in case the change in network
+            configuration has further impact than the usually expected.
+          </t>
+          <t>
+            For example, a newly available network interface would normally only
+            imply new connection possibilities. In some cases however, such as
+            the launch of a VPN application, the new interface might have been
+            accompanied by a change of routing policies that have invalidated
+            the earlier available routes.
+          </t>
+        </section>
+        <section title="Relationshiop with Multipath ICE">
+          <t>
+            An ICE restart would typically result in a set of valid pairs. In
+            cases where Multipath ICE is being used, agents MUST make sure that,
+            as long as they are still valid, all paths that were in use prior to
+            the restart, would still be usable after it completes.
+          </t>
+          <t>
+            The exact semantics for selecting and enabling one or multiple such
+            paths simultaneously are still being discussed and worked out in
+            <xref target="MPICE"/>. Still, regardless of the specific messaging
+            to take place, it is important that ICE implementations can and
+            should behave in a way that does not, even briefly, disrupt media
+            flow on pairs that are still valid.
+          </t>
+        </section>
+      </section>
+    </section>
+    <section title='The case against infinite trickling' anchor="end-of-ice">
+      <t>
+        As part of the ongoing discussions on improving ICE, it has been
+        suggested <xref target="MPICE"/> that candidate updates be handled by
+        making candidate trickling an endless process.
+      </t>
+      <t>
+        While endless trickling does provide a simple solution to some common
+        use cases, it also introduces some significant drawbacks:
+      </t>
+      <t>
+        <list style="symbol">
+          <t>
+            Clearly determining failure. In the vast majority of cases, ICE
+            agents would likely have a very finite set of candidates. Trickling
+            and checking these candidates is currently a very clearly delimited
+            process that makes it possible to detect failure and alert users in
+            a timely manner. Using endless trickling would make that impossible
+            and would require the introduction of "magic" timers.
+          </t>
+          <t>
+            Promptly releasing and reallocating unnecessary candidates.
+            Currently, the finite nature of ICE processing makes it trivial for
+            agents to decide when they need to release, stop maintaining, or
+            reallocate resources such as relay or server-reflexive candidates.
+            Losing the clear boundaries of ICE processing would remove that
+            ability and, once again, require the introduction of arbitrary times
+            in order to avoid wasting resources.
+          </t>
+          <t>
+            Endless trickling has been known to hang out with Ronan, the Green
+            Goblin and various zombies. It also regularly contributes to
+            global warming.
+          </t>
+        </list>
+      </t>
+    </section>
+    <section title="Examples" anchor="examples">
+      <t>
+        An interface is added
+        An interface is removed
+        Mobility with ICE (MICE): pass through turn
+        Mobility with ICE and peer-reflexive candidates:
+      </t>
+    </section>
+  </middle>
+  <back>
+    <references title='Normative References'>
+      <?rfc include="reference.RFC.5245"?>
+      <?rfc include="reference.RFC.3261"?>
+      <?rfc include="reference.I-D.ivov-mmusic-trickle-ice-sip"?>
+      <?rfc include="reference.I-D.ivov-mmusic-trickle-ice"?>
+      <?rfc include="reference.I-D.singh-avtcore-mprtp"?>
+      <?rfc include="reference.I-D.draft-wing-mmusic-ice-mobility"?>
+      <reference anchor="ICE-OPTS" target="http://www.ietf.org/mail-archive/web/mmusic/current/threads.html#13607">
+        <front>
+          <title>MMUSIC Discussion on ICE Optimisations</title>
+          <author/>
+          <date/>
+        </front>
+      </reference>
+      <reference anchor="MPICE" target="https://docs.google.com/document/d/1P1XPCRJKBkSjwCzIIEUJmp7V694_FzJQe-fvN8bk-Xw/edit">
+        <front>
+          <title>Improving ICE's Nomination Procedures</title>
+          <author initials="J." surname="Uberti" fullname="Justin Uberti">
+                <organization>Google</organization>
+          </author>
+          <author initials="J." surname="Lennox" fullname="Jonathan Lennox">
+                <organization>Vidyo</organization>
+          </author>
+          <date/>
+        </front>
+      </reference>
+      <reference anchor="XEP-0176">
+        <front>
+          <title>XEP-0176: Jingle ICE-UDP Transport Method</title>
+          <author initials='J.' surname='Beda' fullname='Joe Beda'>
+                  <organization abbrev='Google'>Google</organization>
+          </author>
+          <author initials='S.' surname='Ludwig'
+                  fullname='Scott Ludwig'>
+            <organization abbrev='Google'>Google</organization>
+          </author>
+          <author initials='P.' surname='Saint-Andre'
+                  fullname='Peter Saint-Andre'>
+            <organization abbrev='Cisco'>Cisco</organization>
+          </author>
+          <author initials='J.' surname='Hildebrand'
+                  fullname='Joe Hildebrand'>
+            <organization abbrev='Cisco'>Cisco</organization>
+          </author>
+          <author initials='S.' surname='Egan' fullname='Sean Egan'>
+            <organization abbrev='Google'>Google </organization>
+          </author>
+          <author initials='R.' surname='McQueen'
+                      fullname='Robert McQueen'>
+            <organization abbrev='Collabora'>Collabora</organization>
+          </author>
+          <date month="June" year="2009" />
+        </front>
+        <seriesInfo name="XEP" value="XEP-0176" />
+      </reference>
+    </references>
+  </back>
+</rfc>
