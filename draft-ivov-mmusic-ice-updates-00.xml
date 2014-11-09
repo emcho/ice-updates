@@ -81,7 +81,7 @@
         able to swiftly switch between existing routes based on RTT or
         local indicators (e.g., perceived Wi-Fi signal strength) is another.
         Rapid route switching can also be used to support network mobility as
-        described in <xref target="I-D.draft-wing-mmusic-ice-mobility"/>.
+        described in <xref target="I-D.wing-mmusic-ice-mobility"/>.
         (PENDING: use with MICE requires some further thought in order to
         optimize the case of a mobile peer talking to a public media server).
       </t>
@@ -357,7 +357,7 @@
       <?rfc include="reference.I-D.ivov-mmusic-trickle-ice-sip"?>
       <?rfc include="reference.I-D.ivov-mmusic-trickle-ice"?>
       <?rfc include="reference.I-D.singh-avtcore-mprtp"?>
-      <?rfc include="reference.I-D.draft-wing-mmusic-ice-mobility"?>
+      <?rfc include="reference.I-D.wing-mmusic-ice-mobility"?>
       <reference anchor="ICE-OPTS" target="http://www.ietf.org/mail-archive/web/mmusic/current/threads.html#13607">
         <front>
           <title>MMUSIC Discussion on ICE Optimisations</title>
