@@ -236,7 +236,7 @@
         use cases, it also introduces some significant drawbacks:
       </t>
       <t>
-        <list style="symbol">
+        <list style="symbols">
           <t>
             Clearly determining failure. In the vast majority of cases, ICE
             agents would likely have a very finite set of candidates. Trickling
@@ -251,8 +251,8 @@
             agents to decide when they need to release, stop maintaining, or
             reallocate resources such as relay or server-reflexive candidates.
             Losing the clear boundaries of ICE processing would remove that
-            ability and, once again, require the introduction of arbitrary times
-            in order to avoid wasting resources.
+            ability and, once again, require the introduction of arbitrary
+            timers in order to avoid wasting resources.
           </t>
           <t>
             Endless trickling has been known to hang out with Ronan, the Green
