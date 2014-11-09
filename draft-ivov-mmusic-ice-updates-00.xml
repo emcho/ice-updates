@@ -58,7 +58,7 @@
         at all.
       </t>
       <t>
-        This document discusses ways of simplifying the process.  Special
+        This document discusses ways of simplifying the process. Special
         attention is being paid to preserving existing features in ICE and
         trickle ICE <xref target="I-D.ivov-mmusic-trickle-ice"/> that allow
         implementations today to promptly release unused candidates or
@@ -207,7 +207,7 @@
             the earlier available routes.
           </t>
         </section>
-        <section title="Relationshiop with Multipath ICE">
+        <section title="Relationship with Multipath ICE">
           <t>
             An ICE restart would typically result in a set of valid pairs. In
             cases where Multipath ICE is being used, agents MUST make sure that,
@@ -257,18 +257,97 @@
           <t>
             Endless trickling has been known to hang out with Ronan, the Green
             Goblin and various zombies. It also regularly contributes to
-            global warming.
+            global warming and eats puppies.
           </t>
         </list>
       </t>
     </section>
     <section title="Examples" anchor="examples">
       <t>
-        An interface is added
-        An interface is removed
-        Mobility with ICE (MICE): pass through turn
-        Mobility with ICE and peer-reflexive candidates:
+        The following examples try to describe a number of cases that require
+        transport reconfiguration. Some of them might be only a matter of
+        switching between previously validated routes without requiring an ICE
+        restart. Others do trigger a restart without however disrupting existing
+        connectivity.
       </t>
+      <section title="Switching to a better interface. No ICE restart.">
+        <t>
+          Arya and Bran use the new multipath ICE mechanisms and have a set of
+          pre-validated candidate pairs. They are currently communicating over
+          4G because, for example, it presented better RTT during ICE
+          processing. At a certain point Arya detects that the consent checks
+          exchanged with Bob over her Wi-Fi interface start presenting a lower
+          RTT. Alternately she could also receive an indication from the OS that
+          the Wi-Fi signal strength detected by her wireless interface has gone
+          above a certain threshold. For either of these reasons Arya wishes to
+          switch media from her 4G to her Wi-Fi interface.
+        </t>
+        <t>
+          This scenario DOES NOT require an ICE restart since no additional
+          checks are necessary. Hopefully such a switch will be natively
+          supported by the new multipath ICE mechanism, for example, through the
+          emission of a USE-CANDIDATE binding request over Arya's Wi-Fi
+          interface.
+        </t>
+      </section>
+      <section title="Adding an interface. ICE restart required">
+        <t>
+          Arianne has an ongoing media session with Brienne over a 4G interface.
+          Brienne on the other hand posesses a wired and a wireless interface.
+          Her connection with Arianne is happening through a VPN interface
+          configured on top of her wireless interface.
+        </t>
+        <t>
+          Arianne's Wi-Fi interface then becomes available and she wishes to
+          migrate her session from 4G to Wi-Fi.
+        </t>
+        <t>
+          In order to do this Arianne does the following:
+        </t>
+        <t>
+          <list style="symbols">
+            <t>
+              She triggers an ICE restart by trickling new ice-ufrag and ice-pwd
+              values to Brienne.
+            </t>
+            <t>
+              She continues exchanging media with Brienne over her 4G interface.
+            </t>
+            <t>
+              She starts gathering and trickling local host, srflx and relay
+              candidates to Brienne.
+            </t>
+            <t>
+              She starts receiving trickled candidates from Brienne, she pairs
+              them with her local ones and starts checking them
+            </t>
+          </list>
+        </t>
+        <t>
+          In the same time Brienne:
+        </t>
+        <t>
+          <list style="symbols">
+            <t>
+              Continues exchanging media with Arianne.
+            </t>
+            <t>
+              Re-allocates host and srflx candidates for her wireless and wired
+              interfaces and then trickles them to Brienne.
+            </t>
+          </list>
+        </t>
+        <t>
+          Once a new set of candidates are validated, Arianne and Brienne may
+          decide to migrate their session to the pair containing any of
+          Arianne's new Wi-Fi addresses.
+        </t>
+      </section>
+      <section title="Scenarios involving MICE">
+        <t>
+          TBD
+        </t>
+      </section>
     </section>
   </middle>
   <back>
