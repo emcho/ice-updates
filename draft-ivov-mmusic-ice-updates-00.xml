@@ -58,7 +58,7 @@
         at all.
       </t>
       <t>
-        This document discusses ways of simplifying the process. Special
+        This document discusses ways of simplifying the process.  Special
         attention is being paid to preserving existing features in ICE and
         trickle ICE <xref target="I-D.ivov-mmusic-trickle-ice"/> that allow
         implementations today to promptly release unused candidates or
